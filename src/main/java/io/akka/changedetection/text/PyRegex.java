@@ -50,16 +50,25 @@ public final class PyRegex {
   }
 
   /**
-   * Compiles a pattern written for Python. Named groups differ in spelling and two of Python's
-   * flag letters have no counterpart, so those are translated rather than being handed to the
-   * compiler as-is, where they would raise on an expression the original accepts.
+   * The character classes are made Unicode-aware, which they are not by default here and are
+   * by default there. Without this, a rule written as a whitespace class does not match a
+   * non-breaking space, and a page that indents with one is matched on one side and not the
+   * other.
    */
+  private static final int UNICODE_CLASSES = Pattern.UNICODE_CHARACTER_CLASS;
+
+  /**
+   * Compiles a pattern written for the source language. Named groups differ in spelling and two
+   * of its flag letters have no counterpart, so those are translated rather than being handed
+   * to the compiler as-is, where they would raise on an expression the original accepts.
+   */
+
   public static Pattern compile(String pythonPattern) {
-    return Pattern.compile(translate(pythonPattern));
+    return Pattern.compile(translate(pythonPattern), UNICODE_CLASSES);
   }
 
   public static Pattern compile(String pythonPattern, int extraFlags) {
-    return Pattern.compile(translate(pythonPattern), extraFlags);
+    return Pattern.compile(translate(pythonPattern), extraFlags | UNICODE_CLASSES);
   }
 
   public static String translate(String pythonPattern) {
