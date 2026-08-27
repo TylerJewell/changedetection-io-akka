@@ -1,0 +1,9 @@
+# What in this repository was written by somebody else, and why it is here.
+# One path per line, the reason after the #. Read by toolkit/source_hygiene.py and
+# toolkit/copied_strings.py so their findings are about code this port wrote.
+
+src/main/resources/changedetection/templates  # changedetection.io's own page templates, shipped unchanged (RENDERING.md R3)
+src/main/resources/changedetection/static     # changedetection.io's own stylesheets, scripts, icons and images, shipped unchanged
+src/main/resources/changedetection/translations # changedetection.io's own translator-contributed wording, shipped unchanged
+src/main/resources/changedetection/browser    # changedetection.io's own in-page scripts, run by the driven browser
+src/main/resources/changedetection/api        # changedetection.io's own published description of its programmatic interface

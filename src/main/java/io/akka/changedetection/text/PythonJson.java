@@ -21,6 +21,11 @@ public final class PythonJson {
   private PythonJson() {}
 
   /** json.dumps(value, indent=4, ensure_ascii=False). */
+  /** The same, for a value that is not yet a tree. */
+  public static String dumpsIndented(Object value) {
+    return dumpsIndented(new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(value));
+  }
+
   public static String dumpsIndented(JsonNode node) {
     StringBuilder sb = new StringBuilder();
     write(node, sb, 4, 0);

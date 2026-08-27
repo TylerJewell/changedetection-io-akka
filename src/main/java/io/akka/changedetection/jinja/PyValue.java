@@ -231,6 +231,14 @@ public final class PyValue {
         int at = i < 0 ? array.length + i : i;
         return at >= 0 && at < array.length ? array[at] : UNDEFINED;
       }
+      if (target instanceof Iterable<?> iterable) {
+        List<Object> items = new ArrayList<>();
+        for (Object item : iterable) {
+          items.add(item);
+        }
+        int at = i < 0 ? items.size() + i : i;
+        return at >= 0 && at < items.size() ? items.get(at) : UNDEFINED;
+      }
     }
     if (index instanceof CharSequence name) {
       return getAttribute(target, name.toString());
@@ -384,6 +392,12 @@ public final class PyValue {
     if (value instanceof CharSequence text) {
       for (int i = 0; i < text.length(); i++) {
         out.add(String.valueOf(text.charAt(i)));
+      }
+      return out;
+    }
+    if (value instanceof Iterable<?> iterable) {
+      for (Object item : iterable) {
+        out.add(item);
       }
       return out;
     }

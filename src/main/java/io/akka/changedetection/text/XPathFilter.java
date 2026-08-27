@@ -208,4 +208,28 @@ public final class XPathFilter {
       super(message, cause);
     }
   }
+
+  /**
+   * Compiles an expression and throws if it will not compile.
+   *
+   * <p>Compiling is all the check does: an expression that matches nothing today is perfectly
+   * valid, because the page it is meant for has not been fetched yet.
+   */
+  public static void validateExpression(String expression, boolean earlierDialect) {
+    if (earlierDialect) {
+      try {
+        javax.xml.xpath.XPathFactory.newInstance().newXPath().compile(expression.strip());
+      } catch (javax.xml.xpath.XPathExpressionException e) {
+        throw new XPathFilterException(e.getMessage() == null ? "invalid" : e.getMessage(), e);
+      }
+      return;
+    }
+    try {
+      XPathCompiler compiler = PROCESSOR.newXPathCompiler();
+      compiler.declareNamespace("re", "http://exslt.org/regular-expressions");
+      compiler.compile(expression.strip());
+    } catch (net.sf.saxon.s9api.SaxonApiException e) {
+      throw new XPathFilterException(e.getMessage() == null ? "invalid" : e.getMessage(), e);
+    }
+  }
 }

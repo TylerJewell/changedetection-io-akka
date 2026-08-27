@@ -174,18 +174,19 @@ public final class RuleSet {
     Map<String, JsonLogic.Operation> operations = JsonLogic.builtins();
     operations.putAll(customOperations());
 
-    try {
-      Object result = new JsonLogic(operations).apply(toLogic(logicOperator, rules), data);
-      return JsonLogic.toBool(result);
-    } catch (RuntimeException e) {
-      // A condition that cannot be evaluated does not silently block every change; the
-      // original lets the error surface to the operator and the check goes on.
-      return true;
-    }
+    // A rule that names an operator or a fact nothing supplies is not quietly treated as
+    // holding or as failing: it stops the check and is reported against the watch, because
+    // either silent answer would leave an operator with a rule that does nothing and no sign
+    // of it. The rule is theirs to correct, so the error is one they can act on.
+    Object result = new JsonLogic(operations).apply(toLogic(logicOperator, rules), data);
+    return JsonLogic.toBool(result);
   }
 
   /** Everything a condition may be written against. */
   public static Map<String, Object> gatherFacts(Watch watch, String text, Facts facts) {
+    // A caller with no history to offer passes nothing; the facts drawn from history are then
+    // simply absent, which is what a watch on its first check has anyway.
+    Facts history = facts == null ? NO_HISTORY : facts;
     Map<String, Object> data = new LinkedHashMap<>();
     if (text == null) {
       return data;
@@ -197,9 +198,11 @@ public final class RuleSet {
       data.put("extracted_number", price);
     }
 
-    data.put("page_word_count", (long) PythonText.splitOnWhitespace(text).size());
+    // Named as the plugin that supplies it names it. The count is of the text arriving, not
+    // of anything stored, so it is available on a watch's first check as well as later ones.
+    data.put("word_count", (long) PythonText.splitOnWhitespace(text).size());
 
-    String previous = facts.newestSnapshot(watch);
+    String previous = history.newestSnapshot(watch);
     if (previous != null) {
       int distance = Levenshtein.distance(previous, text);
       double ratio = Levenshtein.ratio(previous, text);

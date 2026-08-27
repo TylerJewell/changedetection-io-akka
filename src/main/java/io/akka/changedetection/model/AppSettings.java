@@ -50,6 +50,23 @@ public final class AppSettings {
 
   private AppSettings() {}
 
+  /**
+   * A fresh secret, made when the settings are first created.
+   *
+   * <p>Both the feeds and the programmatic interface are closed until one exists, so an
+   * installation that started without them would refuse every caller and every feed reader --
+   * which reads as the service being broken rather than as a setting nobody set.
+   */
+  static String newToken() {
+    byte[] bytes = new byte[16];
+    new java.security.SecureRandom().nextBytes(bytes);
+    StringBuilder hex = new StringBuilder();
+    for (byte value : bytes) {
+      hex.append(String.format("%02x", value));
+    }
+    return hex.toString();
+  }
+
   public static Map<String, Object> create() {
     Map<String, Object> requests = new LinkedHashMap<>();
     requests.put("extra_proxies", new ArrayList<>());
@@ -97,7 +114,7 @@ public final class AppSettings {
     application.put("pager_size", 50);
     application.put("password", false);
     application.put("render_anchor_tag_content", false);
-    application.put("rss_access_token", null);
+    application.put("rss_access_token", newToken());
     application.put("rss_content_format", RSS_CONTENT_FORMAT_DEFAULT);
     application.put("rss_template_type", "system_default");
     application.put("rss_template_override", null);
@@ -111,7 +128,7 @@ public final class AppSettings {
     application.put("tags", new LinkedHashMap<String, Object>());
     application.put("webdriver_delay", null);
     application.put("ui", ui);
-    application.put("api_access_token", null);
+    application.put("api_access_token", newToken());
 
     Map<String, Object> settings = new LinkedHashMap<>();
     settings.put("headers", new LinkedHashMap<String, Object>());

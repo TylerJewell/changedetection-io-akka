@@ -256,4 +256,43 @@ public final class UrlSafety {
     }
     return null;
   }
+
+  /**
+   * Why the AI endpoint may not be pointed there, or null when it may.
+   *
+   * <p>Separate from the watch check because the opt-out is different: an operator running a
+   * model on their own machine has a good reason to name a private address, and says so with
+   * the environment variable that also relaxes the watch check.
+   */
+  public static String whyApiBaseIsRefused(String apiBase) {
+    if (apiBase == null || apiBase.isBlank()) {
+      return null;
+    }
+    if (allowsRestrictedAddresses()) {
+      return null;
+    }
+    String url = apiBase.strip();
+    if (!isSafeValidUrl(url, false)) {
+      return "API Base URL is not a valid http(s) URL.";
+    }
+    for (String hostname : hostnames(url)) {
+      if (whyHostIsRefused(hostname) != null) {
+        return "API Base URL resolves to a private, loopback, link-local or reserved "
+            + "IP address and was blocked to prevent SSRF. To allow LLM endpoints on private "
+            + "networks (e.g. a local Ollama server) set the environment variable "
+            + "ALLOW_IANA_RESTRICTED_ADDRESSES=true and restart.";
+      }
+    }
+    return null;
+  }
+
+  public static boolean allowsRestrictedAddresses() {
+    String value = System.getenv("ALLOW_IANA_RESTRICTED_ADDRESSES");
+    if (value == null) {
+      return false;
+    }
+    String lower = value.strip().toLowerCase(java.util.Locale.ROOT);
+    return lower.equals("y") || lower.equals("yes") || lower.equals("t")
+        || lower.equals("true") || lower.equals("on") || lower.equals("1");
+  }
 }

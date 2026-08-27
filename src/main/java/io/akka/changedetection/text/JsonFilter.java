@@ -214,7 +214,11 @@ public final class JsonFilter {
   }
 
   private static String stripBom(String s) {
-    return s.startsWith("﻿") ? s.substring(1) : s;
+    int at = 0;
+    while (at < s.length() && s.charAt(at) == '\uFEFF') {
+      at++;
+    }
+    return at == 0 ? s : s.substring(at);
   }
 
   /**
@@ -314,5 +318,22 @@ public final class JsonFilter {
 
   private static String sanitiseKey(String key) {
     return LONE_SURROGATE.matcher(key).replaceAll("�");
+  }
+
+  /** Compiles a JSONPath and throws if it will not compile. */
+  public static void validateJsonPath(String path) {
+    for (String alternative : expandAlternation(path.strip())) {
+      JsonPath.compile(alternative);
+    }
+  }
+
+  /** Compiles a jq programme, having first refused the builtins that reach outside it. */
+  public static void validateJqProgramme(String expression) {
+    validateJqExpression(expression, false);
+    try {
+      JsonQuery.compile(expression.strip(), Version.LATEST);
+    } catch (java.io.IOException e) {
+      throw new IllegalArgumentException(e.getMessage() == null ? "invalid" : e.getMessage());
+    }
   }
 }
