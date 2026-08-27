@@ -84,6 +84,29 @@ class ApiV1IntegrationTest extends TestKitSupport {
         .invoke();
   }
 
+  /**
+   * Waits for the list to hold a watch, because the list is a projection.
+   *
+   * <p>A watch created a moment ago is in its own record immediately and in the list that
+   * reads across records shortly after. Reading the list without waiting is reading it at
+   * the one moment it is allowed to be behind.
+   */
+  private JsonNode awaitListed(String path, String uuid) {
+    JsonNode body = MAPPER.createObjectNode();
+    for (int attempt = 0; attempt < 60; attempt++) {
+      body = parse(get(path).body());
+      if (uuid == null ? body.size() > 0 : body.has(uuid)) {
+        return body;
+      }
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return body;
+  }
+
   private static JsonNode parse(String body) {
     try {
       return MAPPER.readTree(body);
@@ -227,9 +250,7 @@ class ApiV1IntegrationTest extends TestKitSupport {
   @Test
   @Order(13)
   void theListNamesEveryWatch() {
-    var response = get("/api/v1/watch");
-    assertEquals(200, response.status().intValue());
-    JsonNode body = parse(response.body());
+    JsonNode body = awaitListed("/api/v1/watch", watchUuid);
     assertTrue(body.has(watchUuid));
     JsonNode row = body.get(watchUuid);
     for (String field :
@@ -268,9 +289,9 @@ class ApiV1IntegrationTest extends TestKitSupport {
   @Test
   @Order(17)
   void searchingMatchesAnExactAddressAndAPartialOne() {
-    var exact = get("/api/v1/search?q=https%3A%2F%2Fexample.com%2Fapi-created");
-    assertEquals(200, exact.status().intValue());
-    assertTrue(parse(exact.body()).has(watchUuid), "an exact address matches");
+    JsonNode exact =
+        awaitListed("/api/v1/search?q=https%3A%2F%2Fexample.com%2Fapi-created", watchUuid);
+    assertTrue(exact.has(watchUuid), "an exact address matches");
 
     var partialOff = get("/api/v1/search?q=api-created");
     assertFalse(parse(partialOff.body()).has(watchUuid), "a fragment does not, by default");
@@ -284,7 +305,8 @@ class ApiV1IntegrationTest extends TestKitSupport {
   void theSystemInformationCounts() {
     var response = get("/api/v1/systeminfo");
     assertEquals(200, response.status().intValue());
-    JsonNode body = parse(response.body());
+    awaitListed("/api/v1/watch", null);
+    JsonNode body = parse(get("/api/v1/systeminfo").body());
     assertTrue(body.get("watch_count").asInt() >= 1);
     assertTrue(body.has("queue_size"));
     assertTrue(body.has("overdue_watches"));

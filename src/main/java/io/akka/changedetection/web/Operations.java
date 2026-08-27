@@ -124,6 +124,10 @@ public final class Operations {
 
   public void delete(String uuid) {
     componentClient.forEventSourcedEntity(uuid).method(WatchEntity::delete).invoke();
+    // A watch asked for and not yet started is still in the queue, and the queue is a set
+    // of identifiers rather than of records -- so one deleted mid-wait stays in it forever,
+    // drawn on the queue page as a row nothing will ever check.
+    Site.unqueue(uuid);
     StreamHub.publish("watch_deleted", Map.of("uuid", uuid));
   }
 

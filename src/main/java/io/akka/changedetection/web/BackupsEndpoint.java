@@ -471,73 +471,52 @@ public class BackupsEndpoint extends AbstractHttpEndpoint {
     return value * 1024 * 1024;
   }
 
-  /** Where the archives that have been taken are kept, and what is known about each. */
+  /**
+   * The archives that have been taken, held in this process rather than in the store.
+   *
+   * <p>An archive is a copy of everything, so on any real installation it passes the size a
+   * record this runtime replicates may be -- kept in the store it would stop replicating and
+   * nothing would say so. The original writes it to a scratch directory beside its data and
+   * lists that directory; this is the same thing without a directory: transient, bounded, and
+   * gone when the service restarts, which is what the page's own wording already implies by
+   * offering to take another.
+   */
   static final class Backups {
+
+    /** How many are kept before the oldest is dropped. */
+    private static final int KEEP = 5;
 
     record Entry(String filename, long sizeBytes, double createdAt) {}
 
+    private static final Map<String, byte[]> ARCHIVES = new java.util.LinkedHashMap<>();
+
+    private static final List<Entry> TAKEN = new ArrayList<>();
+
     private Backups() {}
 
-    static List<Entry> list(Store store) {
-      List<Entry> out = new ArrayList<>();
-      String index = store.sideStore("system", "backup-index");
-      if (index == null || index.isEmpty()) {
-        return out;
-      }
-      for (String line : index.split("\n")) {
-        String[] parts = line.split(",");
-        if (parts.length == 3) {
-          try {
-            out.add(new Entry(parts[0], Long.parseLong(parts[1]), Double.parseDouble(parts[2])));
-          } catch (NumberFormatException e) {
-            // A line that cannot be read is one archive missing from the list, not a failure.
-          }
-        }
-      }
+    static synchronized List<Entry> list(Store store) {
+      List<Entry> out = new ArrayList<>(TAKEN);
       out.sort(Comparator.comparingDouble(Entry::createdAt).reversed());
       return out;
     }
 
-    static void keep(
+    static synchronized void keep(
         Store store, ComponentClient componentClient, String filename, byte[] archive) {
-      store.saveSideStore(
-          "system", "backup-" + filename, java.util.Base64.getEncoder().encodeToString(archive));
-      List<Entry> existing = list(store);
-      existing.add(0, new Entry(filename, archive.length, System.currentTimeMillis() / 1000.0));
-      writeIndex(store, existing);
-    }
-
-    static byte[] read(Store store, String filename) {
-      String stored = store.sideStore("system", "backup-" + filename);
-      if (stored == null || stored.isEmpty()) {
-        return null;
-      }
-      try {
-        return java.util.Base64.getDecoder().decode(stored);
-      } catch (IllegalArgumentException e) {
-        return null;
+      ARCHIVES.put(filename, archive);
+      TAKEN.add(new Entry(filename, archive.length, System.currentTimeMillis() / 1000.0));
+      while (TAKEN.size() > KEEP) {
+        Entry oldest = TAKEN.remove(0);
+        ARCHIVES.remove(oldest.filename());
       }
     }
 
-    static void removeAll(Store store, ComponentClient componentClient) {
-      for (Entry entry : list(store)) {
-        store.deleteSideStore("system", "backup-" + entry.filename());
-      }
-      store.saveSideStore("system", "backup-index", "");
+    static synchronized byte[] read(Store store, String filename) {
+      return ARCHIVES.get(filename);
     }
 
-    private static void writeIndex(Store store, List<Entry> entries) {
-      StringBuilder index = new StringBuilder();
-      for (Entry entry : entries) {
-        index
-            .append(entry.filename())
-            .append(',')
-            .append(entry.sizeBytes())
-            .append(',')
-            .append(entry.createdAt())
-            .append('\n');
-      }
-      store.saveSideStore("system", "backup-index", index.toString());
+    static synchronized void removeAll(Store store, ComponentClient componentClient) {
+      ARCHIVES.clear();
+      TAKEN.clear();
     }
   }
 }

@@ -1,3 +1,6 @@
 target/
 .idea/
 *.iml
+
+# The secret this installation makes for itself on first run.
+datastore/

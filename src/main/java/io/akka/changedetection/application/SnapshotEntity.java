@@ -44,10 +44,31 @@ public class SnapshotEntity extends KeyValueEntity<SnapshotEntity.Snapshot> {
     return Snapshot.empty();
   }
 
+  /**
+   * How large one stored version may be once compressed.
+   *
+   * <p>A record this runtime replicates has a ceiling past which it stops replicating, and a
+   * watched page has no size limit of its own -- a document store, a large feed or a page
+   * that embeds its own data will pass it. A version too large to keep is refused with the
+   * reason rather than stored and silently unreplicated, and the check that produced it
+   * reports the refusal against the watch.
+   */
+  static final int MAXIMUM_COMPRESSED_BYTES = 900 * 1024;
+
   public Effect<String> store(Store command) {
     String text = command.text() == null ? "" : command.text();
+    byte[] compressed = compress(text);
+    if (compressed.length > MAXIMUM_COMPRESSED_BYTES) {
+      return effects()
+          .error(
+              "This version is "
+                  + (compressed.length / 1024)
+                  + "kB compressed, past the "
+                  + (MAXIMUM_COMPRESSED_BYTES / 1024)
+                  + "kB a stored version may be. Narrow what is compared with a filter.");
+    }
     return effects()
-        .updateState(new Snapshot(compress(text), text.length(), command.kind()))
+        .updateState(new Snapshot(compressed, text.length(), command.kind()))
         .thenReply("ok");
   }
 
