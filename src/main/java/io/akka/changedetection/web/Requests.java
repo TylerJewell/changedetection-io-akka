@@ -335,8 +335,9 @@ public final class Requests {
       return ContentTypes.APPLICATION_JSON;
     }
     if (lower.endsWith(".svg")) {
-      return ContentTypes.create(
-          MediaTypes.applicationWithFixedCharset("svg+xml", akka.http.javadsl.model.HttpCharsets.UTF_8));
+      // A picture, not a document: served under anything but an image type, a browser
+      // refuses to draw it and every icon on the page becomes a broken-image placeholder.
+      return ContentTypes.parse("image/svg+xml; charset=utf-8");
     }
     if (lower.endsWith(".png")) {
       return ContentTypes.create(MediaTypes.IMAGE_PNG);

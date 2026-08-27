@@ -35,7 +35,7 @@ final class ProbeStore implements TextJsonDiffProcessor.Environment {
     return (Map<String, Object>) ((Map<String, Object>) data.get("settings")).get("requests");
   }
 
-  Watch addWatch(String uuid, Map<String, Object> fields) {
+  public Watch addWatch(String uuid, Map<String, Object> fields) {
     Watch watch = Watch.create(uuid);
     watch.fields().putAll(fields);
     watch.resetEditedFlag();

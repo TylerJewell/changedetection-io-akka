@@ -44,8 +44,19 @@ public final class PyValue {
     }
   }
 
+  /**
+   * Something that is already markup, and must reach the output unescaped.
+   *
+   * <p>An interface rather than only the class below, because the things a template prints
+   * as markup are not all strings the engine made: a form field's label renders itself, and
+   * printed through the ordinary path it arrives on the page as the text of its own tag.
+   */
+  public interface Safe {
+    String markup();
+  }
+
   /** A string that must not be escaped again when it reaches the output. */
-  public static final class Markup implements CharSequence {
+  public static final class Markup implements CharSequence, Safe {
     private final String value;
 
     public Markup(String value) {
@@ -53,6 +64,11 @@ public final class PyValue {
     }
 
     public String value() {
+      return value;
+    }
+
+    @Override
+    public String markup() {
       return value;
     }
 

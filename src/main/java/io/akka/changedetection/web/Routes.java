@@ -164,6 +164,30 @@ public final class Routes {
     return false;
   }
 
+  /**
+   * The name of the route a path belongs to, or an empty string when none does.
+   *
+   * <p>The templates ask for it to decide which item in the side rail is the one you are
+   * looking at. Without it every page draws the rail with nothing marked, which is only
+   * visible by putting the two systems' pages side by side.
+   */
+  public static String nameOf(String path) {
+    if (path == null || path.isEmpty()) {
+      return "";
+    }
+    String candidate = path;
+    int question = candidate.indexOf('?');
+    if (question >= 0) {
+      candidate = candidate.substring(0, question);
+    }
+    for (Map.Entry<String, String> entry : PATHS.entrySet()) {
+      if (matches(entry.getValue(), candidate)) {
+        return entry.getKey();
+      }
+    }
+    return "";
+  }
+
   private static boolean matches(String template, String candidate) {
     String[] wanted = template.split("/", -1);
     String[] given = candidate.split("/", -1);

@@ -47,9 +47,15 @@ public final class TemplateEngine {
               + ")&#34;&gt;",
           Pattern.CASE_INSENSITIVE);
 
+  /**
+   * A colour that may be written into a style rule.
+   *
+   * <p>Three or six hexadecimal digits and nothing else: a bare word would let a value that
+   * is not a colour through, and this value is written into a rule on every page the tag
+   * appears on.
+   */
   private static final Pattern SAFE_COLOUR =
-      Pattern.compile(
-          "^(#[0-9a-fA-F]{3,8}|rgba?\\([0-9,.%\\s]+\\)|hsla?\\([0-9,.%\\s]+\\)|[a-zA-Z]+)$");
+      Pattern.compile("^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$");
 
   private TemplateEngine() {}
 
@@ -216,6 +222,11 @@ public final class TemplateEngine {
         (env, value, positional, keyword) -> {
           // A colour goes straight into a style attribute, so anything that is not a colour is
           // dropped rather than escaped: escaping would leave a broken rule on the page.
+          // A colour nobody set is no colour: stringifying it first would produce a word,
+          // and a word reaches the page as a rule naming a colour that does not exist.
+          if (value == null || value == PyValue.UNDEFINED) {
+            return "";
+          }
           String colour = PyValue.asString(value).strip();
           return SAFE_COLOUR.matcher(colour).matches() ? colour : "";
         });

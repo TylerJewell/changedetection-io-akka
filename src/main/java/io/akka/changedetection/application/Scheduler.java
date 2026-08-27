@@ -42,6 +42,18 @@ public final class Scheduler {
     }
   }
 
+  /**
+   * The spread one watch's due moment carries, drawn once and then kept.
+   *
+   * <p>Uniform across the whole range, so about half of the watches configured with a spread
+   * check a little early and half a little late. A draw that only ever ran late would look
+   * identical on any one watch and would push every check past its interval.
+   */
+  public static double drawJitter(double jitterSeconds, Random random) {
+    double bound = Math.abs(jitterSeconds);
+    return random.nextDouble() * 2 * bound - bound;
+  }
+
   /** One watch's answer, with why. */
   public record Decision(String uuid, boolean due, String reason, double jitter) {}
 
@@ -113,7 +125,7 @@ public final class Scheduler {
         WatchState state = store.watch(row.uuid());
         jitter = state.jitterSeconds();
         if (jitter == 0) {
-          jitter = RANDOM.nextDouble() * 2 * Math.abs(jitterSetting) - Math.abs(jitterSetting);
+          jitter = drawJitter(jitterSetting, RANDOM);
         }
       }
 

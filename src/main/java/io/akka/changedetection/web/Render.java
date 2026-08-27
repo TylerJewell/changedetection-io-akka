@@ -128,7 +128,6 @@ public final class Render {
     context.putIfAbsent("extra_classes", "");
     context.putIfAbsent("extra_stylesheets", new ArrayList<>());
     context.putIfAbsent("header", null);
-    context.putIfAbsent("right_sticky", null);
     context.putIfAbsent("current_diff_url", null);
     context.putIfAbsent("active_tag_uuid", null);
     context.putIfAbsent("active_tag", null);
@@ -317,7 +316,12 @@ public final class Render {
     environment.putGlobal(
         "get_worker_status_info", (PyValue.Callable) (p, k) -> workerStatus(page.store));
 
-    environment.putGlobal("current_user", currentUser(authenticated || !hasPassword));
+    // Whether anybody has signed in, and nothing else. With no password set every page is
+    // open, but nobody is signed in -- so the controls that only make sense to somebody who
+    // signed in, chiefly signing out again, stay hidden. Reading "open" as "signed in" put a
+    // sign-out control on every page of an installation with no password, which the
+    // appearance comparison against the original found.
+    environment.putGlobal("current_user", currentUser(authenticated));
     environment.putGlobal("has_password", hasPassword);
     environment.putGlobal("session", sessionView(page));
     environment.putGlobal("request", requestView(page));
@@ -332,6 +336,19 @@ public final class Render {
         !(application.get("ui") instanceof Map<?, ?> ui)
             || ui.get("socket_io_enabled") == null
             || Fields.truthy(ui.get("socket_io_enabled")));
+
+    // The running version is not shown to somebody who has not signed in to an installation
+    // that has a password, because it tells a visitor which version to look up.
+    environment.putGlobal(
+        "right_sticky", authenticated || !hasPassword ? "v" + Site.VERSION : null);
+    // Nothing here asks anybody whether a newer version exists, so there is never one to
+    // announce. Recorded as a difference rather than left as an unexplained blank.
+    environment.putGlobal("new_version_available", false);
+    environment.putGlobal("all_paused", Fields.truthy(application.get("all_paused")));
+    environment.putGlobal("all_muted", Fields.truthy(application.get("all_muted")));
+    environment.putGlobal(
+        "llm_configured", Evaluator.config(page.store.llmSurroundings()) != null);
+    environment.putGlobal("unread_changes_count", page.store.unreadChangesCount());
   }
 
   /** The address the interface is reached at, taken from what the browser asked for. */
@@ -547,6 +564,10 @@ public final class Render {
           case "path" -> page.path;
           case "args" -> arguments;
           case "blueprint" -> page.blueprint;
+          // Which named route this path belongs to. The side rail marks the item you are
+          // looking at by comparing against it, so a page that cannot say leaves the rail
+          // with nothing marked at all.
+          case "endpoint" -> Routes.nameOf(page.path);
           case "method" -> "GET";
           default -> PyValue.UNDEFINED;
         };

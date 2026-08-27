@@ -31,7 +31,7 @@ class StreamHubTest {
       StreamHub.publish("queue_size", Map.of("q_length", 3));
       StreamHub.Event event = await(pending);
       assertEquals("queue_size", event.name());
-      assertTrue(event.data().contains("\"q_length\":3"));
+      assertTrue(event.payload().toString().contains("\"q_length\":3"));
     } finally {
       StreamHub.unsubscribe(reader);
     }
@@ -44,7 +44,7 @@ class StreamHubTest {
       StreamHub.publish("watch_update", Map.of("watch", Map.of("uuid", "abc")));
       StreamHub.Event event = await(reader.next());
       assertEquals("watch_update", event.name());
-      assertTrue(event.data().contains("abc"));
+      assertTrue(event.payload().toString().contains("abc"));
     } finally {
       StreamHub.unsubscribe(reader);
     }
@@ -56,7 +56,7 @@ class StreamHubTest {
     try {
       StreamHub.publish("toast", Map.of("message", "hello"));
       StreamHub.Event event = await(reader.next());
-      assertTrue(event.data().contains("event_timestamp"), event.data());
+      assertTrue(event.payload().toString().contains("event_timestamp"), event.payload().toString());
     } finally {
       StreamHub.unsubscribe(reader);
     }
@@ -97,7 +97,7 @@ class StreamHubTest {
       StreamHub.Event toSecond = await(second.next());
       assertNotNull(toFirst);
       assertEquals(toFirst.name(), toSecond.name());
-      assertEquals(toFirst.data(), toSecond.data());
+      assertEquals(toFirst.payload(), toSecond.payload());
     } finally {
       StreamHub.unsubscribe(first);
       StreamHub.unsubscribe(second);
@@ -110,7 +110,7 @@ class StreamHubTest {
     try {
       StreamHub.publish("toast", "just a sentence");
       StreamHub.Event event = await(reader.next());
-      assertTrue(event.data().contains("just a sentence"), event.data());
+      assertTrue(event.payload().toString().contains("just a sentence"), event.payload().toString());
     } finally {
       StreamHub.unsubscribe(reader);
     }

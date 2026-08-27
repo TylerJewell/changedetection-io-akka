@@ -191,7 +191,13 @@ public class Form implements PyValue.Attributed, Iterable<Object> {
     @Override
     public String render(Map<String, Object> attributes) {
       StringBuilder sb = new StringBuilder();
-      sb.append("<table id=\"").append(escaped(id())).append("\">");
+      // The attributes the template gave this group belong on the group's own element.
+      // Dropped, a class the stylesheet lays this widget out by never arrives, and five
+      // fields meant to sit in a row stack into a column.
+      Map<String, Object> merged = new LinkedHashMap<>();
+      merged.put("id", id());
+      merged.putAll(attributes);
+      sb.append("<table").append(attributesOf(merged)).append(">");
       StringBuilder hidden = new StringBuilder();
       for (Field field : inner.fields().values()) {
         if (field.type().equals("HiddenField")) {

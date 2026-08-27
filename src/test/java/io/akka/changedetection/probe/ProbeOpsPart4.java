@@ -119,7 +119,13 @@ final class ProbeOpsPart4 {
       }
 
       default:
-        throw new IllegalArgumentException("unknown probe op: " + op);
+        {
+        JsonNode answer = ProbeOpsBench.dispatch(op, args);
+        if (answer == null) {
+          throw new IllegalArgumentException("unknown probe op: " + op);
+        }
+        return answer;
+      }
     }
   }
 }

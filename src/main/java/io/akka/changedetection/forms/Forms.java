@@ -174,7 +174,10 @@ public final class Forms {
         }) {
       form.add(
           new Fields.IntegerField(part[0], part[1])
-              .checking(Checks.numberRange(0.0, null, ZERO_OR_MORE_SECONDS)));
+              .<Fields.IntegerField>checking(Checks.numberRange(0.0, null, ZERO_OR_MORE_SECONDS))
+              // The floor the rule carries is put on the control too, so a browser refuses a
+              // negative before the submission is made rather than after.
+              .renderedWith("min", "0"));
     }
     return form;
   }

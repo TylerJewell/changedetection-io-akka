@@ -51,10 +51,8 @@ public class StreamEndpoint extends AbstractHttpEndpoint {
 
     // The first thing a reader is told is what is true now, so a page that reconnects after a
     // gap converges on current state rather than waiting for the next thing to change.
-    subscriber.offer(
-        new StreamHub.Event("queue_size", data(Map.of("q_length", Site.queueSize()))));
-    subscriber.offer(
-        new StreamHub.Event("general_stats_update", data(generalStats(store))));
+    subscriber.offer(payloadOf("queue_size", Map.of("q_length", Site.queueSize())));
+    subscriber.offer(payloadOf("general_stats_update", generalStats(store)));
 
     Source<StreamHub.Event, NotUsed> events =
         Source.unfoldAsync(
@@ -73,8 +71,13 @@ public class StreamEndpoint extends AbstractHttpEndpoint {
                   return NotUsed.getInstance();
                 });
 
+    // What a reader is sent: the payload as the data, the event's own name as its type.
+    // The name goes in as the identifier too, which a browser echoes back on reconnect and
+    // nothing here reads -- the state a reconnecting page needs is sent to it afresh.
     return HttpResponses.serverSentEvents(
-        events, StreamHub.Event::name, StreamHub.Event::data);
+        events.map(StreamHub.Event::payload),
+        node -> node.path("event").asText(""),
+        node -> node.path("event").asText(""));
   }
 
   /** One button on one row: pause it, mute it, check it now. */
@@ -171,13 +174,13 @@ public class StreamEndpoint extends AbstractHttpEndpoint {
     return count;
   }
 
-  private static String data(Map<String, Object> payload) {
+  /** One thing to send, with its name folded into the payload the way the hub folds it. */
+  private static StreamHub.Event payloadOf(String name, Map<String, Object> payload) {
     Map<String, Object> body = new LinkedHashMap<>(payload);
     body.putIfAbsent("event_timestamp", System.currentTimeMillis() / 1000.0);
-    try {
-      return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(body);
-    } catch (Exception e) {
-      return "{}";
-    }
+    body.put("event", name);
+    return new StreamHub.Event(
+        name, new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(body));
   }
+
 }

@@ -19,7 +19,8 @@ import java.util.Map;
 public abstract class Field implements PyValue.Callable, PyValue.Attributed {
 
   /** The label, which the templates print and also read the text of. */
-  public static final class Label implements PyValue.Attributed, CharSequence {
+  public static final class Label
+      implements PyValue.Attributed, PyValue.Safe, CharSequence {
     private final String forId;
     private final String text;
 
@@ -40,6 +41,16 @@ public abstract class Field implements PyValue.Callable, PyValue.Attributed {
         default -> PyValue.UNDEFINED;
       };
     }
+
+    @Override
+
+    public String markup() {
+
+      return rendered();
+
+    }
+
+    
 
     private String rendered() {
       return "<label for=\"" + Filters.escapeHtml(forId) + "\">"

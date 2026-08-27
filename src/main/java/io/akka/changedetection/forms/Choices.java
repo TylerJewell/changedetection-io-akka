@@ -38,7 +38,13 @@ public final class Choices {
 
   private static List<String> disabledProcessors() {
     String configured = System.getenv("DISABLED_PROCESSORS");
-    if (configured == null || configured.isBlank()) {
+    if (configured == null) {
+      // The picture comparison is off unless a deployment asks for it, which is what the
+      // variable's own default says: setting it to something else switches the picture
+      // comparison back on and switches off whatever was named instead.
+      configured = "image_ssim_diff";
+    }
+    if (configured.isBlank()) {
       return List.of();
     }
     List<String> names = new ArrayList<>();

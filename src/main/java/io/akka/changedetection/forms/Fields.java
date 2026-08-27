@@ -671,7 +671,9 @@ public final class Fields {
           merged.put("checked", true);
         }
         merged.putAll(attributes);
-        sb.append("<li><input").append(attributesOf(merged)).append('>')
+        // A space between the control and its label, because that is what the original
+        // emits and a label sitting hard against a radio button reads as one word.
+        sb.append("<li><input").append(attributesOf(merged)).append("> ")
             .append("<label for=\"").append(escaped(optionId)).append("\">")
             .append(escaped(choice[1])).append("</label></li>");
       }

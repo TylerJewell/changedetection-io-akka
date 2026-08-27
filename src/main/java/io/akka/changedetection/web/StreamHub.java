@@ -60,8 +60,15 @@ public final class StreamHub {
 
   private StreamHub() {}
 
-  /** One thing that happened, named the way the interface's own script names it. */
-  public record Event(String name, String data) {}
+  /**
+   * One thing that happened, named the way the interface's own script names it.
+   *
+   * <p>The payload carries the name under {@code event} as well, because what a reader is
+   * sent as the event's type is derived from the payload rather than passed beside it. The
+   * interface's own handlers read the fields they know and ignore the rest, so the extra key
+   * costs nothing and is what makes the type arrive at all.
+   */
+  public record Event(String name, com.fasterxml.jackson.databind.node.ObjectNode payload) {}
 
   /** One reader, and what it has not been given yet. */
   public static final class Subscriber {
@@ -136,13 +143,15 @@ public final class StreamHub {
     // Every event the interface reads carries the moment it happened, and the page prints it.
     body.putIfAbsent("event_timestamp", System.currentTimeMillis() / 1000.0);
 
-    String data;
+    body.put("event", name);
+    com.fasterxml.jackson.databind.node.ObjectNode node;
     try {
-      data = MAPPER.writeValueAsString(body);
+      node = MAPPER.valueToTree(body);
     } catch (Exception e) {
-      data = "{}";
+      node = MAPPER.createObjectNode();
+      node.put("event", name);
     }
-    Event event = new Event(name, data);
+    Event event = new Event(name, node);
     Collection<Subscriber> everyone = SUBSCRIBERS;
     for (Subscriber subscriber : everyone) {
       subscriber.offer(event);

@@ -562,8 +562,8 @@ public final class Interpreter {
   }
 
   private String finish(Object value) {
-    if (value instanceof PyValue.Markup markup) {
-      return markup.value();
+    if (value instanceof PyValue.Safe safe) {
+      return safe.markup();
     }
     String text = PyValue.asString(value);
     return environment.autoescape() ? Filters.escapeHtml(text) : text;
