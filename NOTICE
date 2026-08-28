@@ -1,0 +1,23 @@
+changedetection-io-akka
+Copyright 2026 Tyler Jewell
+
+This software was written for the Akka Specify port experiment and is licensed
+under the Apache License, Version 2.0. See LICENSE.
+
+It is a clean-room implementation: written against a specification derived by
+running dgtlmoon/changedetection.io and recording what it does, not by translating its source.
+
+Portions of this repository are NOT covered by that licence. The following trees
+are reused verbatim from dgtlmoon/changedetection.io (https://github.com/dgtlmoon/changedetection.io):
+
+    src/main/resources/changedetection/api/
+    src/main/resources/changedetection/browser/
+    src/main/resources/changedetection/static/
+    src/main/resources/changedetection/templates/
+    src/main/resources/changedetection/translations/
+
+    Copyright 2025 Web Technologies s.r.o
+    Licensed under Apache-2.0
+
+Those files remain under the licence their authors chose. Nothing in this
+repository relicenses them. See LICENSING.md and .vendored.
