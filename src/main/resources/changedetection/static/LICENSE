@@ -186,10 +186,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2026 Tyler Jewell
-
-   Derived in behaviour from permitio/opal, Copyright 2021 Or Weis and Asaf Cohen,
-   which is licensed under this same licence. See ACKNOWLEDGEMENTS.md.
+   Copyright 2025 Web Technologies s.r.o.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
